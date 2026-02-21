@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1147"/>
+      <stop offset="100%" stop-color="#0d1b2a"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0d278"/>
+      <stop offset="100%" stop-color="#c9a84c"/>
+    </linearGradient>
+    <linearGradient id="pageLeft" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d4c9b0"/>
+      <stop offset="100%" stop-color="#ece3d0"/>
+    </linearGradient>
+    <linearGradient id="pageRight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f0e8d6"/>
+      <stop offset="100%" stop-color="#e0d5be"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+
+  <!-- Open book — large and centered -->
+  <!-- Left page -->
+  <path d="M 256 340 L 256 160 Q 185 145, 100 168 L 100 348 Q 185 325, 256 340 Z"
+        fill="url(#pageLeft)"/>
+  <!-- Right page -->
+  <path d="M 256 340 L 256 160 Q 327 145, 412 168 L 412 348 Q 327 325, 256 340 Z"
+        fill="url(#pageRight)"/>
+
+  <!-- Book spine highlight -->
+  <line x1="256" y1="160" x2="256" y2="340" stroke="#c9a84c" stroke-width="3"/>
+
+  <!-- Spine shadow lines for depth -->
+  <line x1="254" y1="162" x2="254" y2="338" stroke="#b8a070" stroke-width="1" opacity="0.4"/>
+  <line x1="258" y1="162" x2="258" y2="338" stroke="#ffffff" stroke-width="1" opacity="0.15"/>
+
+  <!-- Book cover edges (visible below pages) -->
+  <path d="M 100 348 Q 185 325, 256 340 L 256 348 Q 185 333, 98 356 Z" fill="#8b6914"/>
+  <path d="M 412 348 Q 327 325, 256 340 L 256 348 Q 327 333, 414 356 Z" fill="#8b6914"/>
+
+  <!-- Gold sparkle rising from book — large -->
+  <path d="M 256 118 L 263 142 L 288 148 L 263 154 L 256 178 L 249 154 L 224 148 L 249 142 Z"
+        fill="url(#gold)" opacity="0.95"/>
+
+  <!-- Medium sparkles -->
+  <path d="M 175 145 L 178 155 L 188 158 L 178 161 L 175 171 L 172 161 L 162 158 L 172 155 Z"
+        fill="#f0d278" opacity="0.7"/>
+  <path d="M 340 140 L 343 150 L 353 153 L 343 156 L 340 166 L 337 156 L 327 153 L 337 150 Z"
+        fill="#f0d278" opacity="0.7"/>
+
+  <!-- Small sparkles -->
+  <path d="M 220 108 L 222 114 L 228 116 L 222 118 L 220 124 L 218 118 L 212 116 L 218 114 Z"
+        fill="#f0d278" opacity="0.5"/>
+  <path d="M 295 105 L 297 111 L 303 113 L 297 115 L 295 121 L 293 115 L 287 113 L 293 111 Z"
+        fill="#f0d278" opacity="0.5"/>
+
+  <!-- Tiny sparkle dots -->
+  <circle cx="200" cy="130" r="2" fill="#f0d278" opacity="0.4"/>
+  <circle cx="310" cy="125" r="2" fill="#f0d278" opacity="0.4"/>
+  <circle cx="256" cy="95" r="2.5" fill="#f0d278" opacity="0.3"/>
+</svg>

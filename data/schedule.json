@@ -1,0 +1,62 @@
+{
+  "reminderChannelId": null,
+  "year": 2026,
+  "members": [
+    {
+      "discordId": "286876274037882880",
+      "name": "Wes"
+    },
+    {
+      "discordId": "463328778068688897",
+      "name": "Jarett"
+    },
+    {
+      "discordId": "805238470913687552",
+      "name": "Alan"
+    },
+    {
+      "discordId": "311324204077416448",
+      "name": "Ben"
+    },
+    {
+      "discordId": "796193903107768320",
+      "name": "Colin"
+    },
+    {
+      "discordId": "295268044882706432",
+      "name": "Matthew"
+    },
+    {
+      "discordId": "222559382880256000",
+      "name": "Josiah"
+    },
+    {
+      "discordId": "612810712862949380",
+      "name": "Mason"
+    },
+    {
+      "discordId": "652290664221900830",
+      "name": "Matt"
+    },
+    {
+      "discordId": "695723534856618004",
+      "name": "Alex"
+    },
+    {
+      "discordId": "466036248616632331",
+      "name": "pandorazboxx"
+    },
+    {
+      "discordId": "347443800311857164",
+      "name": "John"
+    }
+  ],
+  "rotation": [
+    {
+      "month": 11,
+      "memberId": "805238470913687552",
+      "pin": true
+    }
+  ],
+  "exclusions": []
+}
