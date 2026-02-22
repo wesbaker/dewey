@@ -85,7 +85,9 @@ REMINDER_HOUR=10
 
 ### 5. Add Members
 
-You can add members via the `/addmember` slash command, or edit `data/schedule.json` directly:
+You can add members via the `/addmember` slash command, or edit `data/schedule.json` directly.
+
+On first run, if `data/schedule.json` doesn't exist, it's automatically created from `data/schedule.example.json`:
 
 ```json
 {
@@ -98,6 +100,8 @@ You can add members via the `/addmember` slash command, or edit `data/schedule.j
   "exclusions": []
 }
 ```
+
+`data/schedule.json` is gitignored — your live data won't conflict with pulls.
 
 Get Discord user IDs by right-clicking a user > **Copy User ID** (requires Developer Mode).
 
