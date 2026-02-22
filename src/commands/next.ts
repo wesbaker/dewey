@@ -43,7 +43,10 @@ export default {
     ];
     if (slot.pin) lines.push("📌 *(pinned slot)*");
     if (slot.bookUrl) {
-      lines.push(`\n📖 **Book picked:** ${slot.bookUrl}`);
+      const bookDisplay = slot.bookTitle
+        ? `[${slot.bookTitle}](${slot.bookUrl})`
+        : slot.bookUrl;
+      lines.push(`\n📖 **Book picked:** ${bookDisplay}`);
     } else {
       lines.push(`\n*No book picked yet — use \`/pick\` to set one.*`);
     }

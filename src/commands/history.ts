@@ -6,16 +6,15 @@ import { currentYearMonth } from "../rotation.js";
 
 export default {
   data: new SlashCommandBuilder()
-    .setName("schedule")
-    .setDescription("Show the book club rotation"),
+    .setName("history")
+    .setDescription("Show past book club picks"),
 
   async execute(interaction) {
     const schedule = readSchedule();
 
     if (schedule.rotation.length === 0) {
       await interaction.reply({
-        content:
-          "No rotation set yet. An admin can use `/randomize` to generate one.",
+        content: "No rotation history yet.",
         ephemeral: true,
       });
       return;
@@ -26,39 +25,43 @@ export default {
       schedule.members.map((m) => [m.discordId, m.name])
     );
 
-    // Show current + future slots only
-    const futureSlots = schedule.rotation.filter(
-      (s) => s.year > nowYear || (s.year === nowYear && s.month >= nowMonth)
-    );
+    // Past slots only (before current month)
+    const pastSlots = schedule.rotation
+      .filter(
+        (s) => s.year < nowYear || (s.year === nowYear && s.month < nowMonth)
+      )
+      .reverse(); // most recent first
 
-    if (futureSlots.length === 0) {
+    if (pastSlots.length === 0) {
       await interaction.reply({
-        content:
-          "All scheduled months are in the past. An admin can use `/randomize` to fill in upcoming months.",
+        content: "No past months in the rotation yet.",
         ephemeral: true,
       });
       return;
     }
 
-    const lines = futureSlots.map((slot) => {
+    const lines = pastSlots.map((slot) => {
       const name = memberMap.get(slot.memberId) ?? `<@${slot.memberId}>`;
-      const pin = slot.pin ? " 📌" : "";
-      const current =
-        slot.year === nowYear && slot.month === nowMonth
-          ? " ← *this month*"
-          : "";
       const book = slot.bookTitle
         ? ` — [${slot.bookTitle}](${slot.bookUrl})`
         : slot.bookUrl
           ? ` — [book](${slot.bookUrl})`
           : "";
-      return `**${formatSlot(slot.year, slot.month)}**: ${name}${pin}${book}${current}`;
+      return `**${formatSlot(slot.year, slot.month)}**: ${name}${book}`;
     });
 
+    // Discord embeds have a 4096 char limit — truncate if needed
+    let description = lines.join("\n");
+    if (description.length > 4000) {
+      const truncated = lines.slice(0, 20);
+      description =
+        truncated.join("\n") + `\n\n*…and ${lines.length - 20} more*`;
+    }
+
     const embed = new EmbedBuilder()
-      .setTitle("📖 Book Club Schedule")
-      .setDescription(lines.join("\n"))
-      .setColor(0x5865f2);
+      .setTitle("📜 Book Club History")
+      .setDescription(description)
+      .setColor(0xe67e22);
 
     await interaction.reply({ embeds: [embed] });
   },

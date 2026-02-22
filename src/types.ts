@@ -15,6 +15,7 @@ export interface RotationSlot {
   memberId: string;
   pin: boolean; // true = manually pinned, preserved across /randomize
   bookUrl?: string; // Goodreads URL for the picked book
+  bookTitle?: string; // scraped from Goodreads
 }
 
 export interface Exclusion {

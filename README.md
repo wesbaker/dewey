@@ -1,12 +1,13 @@
 # Dewey
 
-A Discord bot for managing a book club rotation. Randomizes who picks the book each month, supports pinning and assigning members to specific months, excluding members from months, and sends mid-month reminders.
+A Discord bot for managing a book club rotation. Randomizes who picks the book each month, tracks book picks with Goodreads integration, and sends mid-month reminders.
 
 ## Features
 
 - **Rolling schedule** across years (December is always off)
 - **Randomization** that fills empty slots without overwriting existing assignments
 - **Pin and assign** members to specific year+month slots
+- **Book tracking** — members set their pick with a Goodreads URL, title is scraped automatically
 - **Mid-month reminders** on the 15th — nudges the current picker about a location and the next picker about their book
 - **Slash commands** for managing the schedule
 
@@ -15,14 +16,19 @@ A Discord bot for managing a book club rotation. Randomizes who picks the book e
 | Command | Description | Admin |
 |---|---|---|
 | `/schedule` | Show current and upcoming rotation | |
-| `/next` | Show who picks next month | |
+| `/next` | Show who picks next month (with book if picked) | |
+| `/history` | Show past months and book picks | |
+| `/pick <url>` | Set your book pick (Goodreads URL) | |
+| `/pick <url> <month> <year>` | Set a book pick for a specific slot | Yes |
 | `/randomize` | Fill empty upcoming slots with randomized assignments | Yes |
+| `/randomize <month> <year>` | Same, but starting from a specific month | Yes |
 | `/assign @user <month> <year>` | Assign a member to a specific month | Yes |
 | `/pin @user <month> <year>` | Pin a member to a month (protected from randomize) | Yes |
 | `/unpin @user` | Remove a pin | Yes |
 | `/exclude @user <month>` | Exclude a member from a calendar month | Yes |
 | `/unexclude @user <month>` | Remove an exclusion | Yes |
 | `/swap @user1 @user2` | Swap two members' months | Yes |
+| `/addmember @user [name]` | Add a member to the book club | Yes |
 | `/setchannel #channel` | Set the reminder channel | Yes |
 
 ### Assign vs Pin
@@ -31,6 +37,12 @@ A Discord bot for managing a book club rotation. Randomizes who picks the book e
 - **`/pin`** does the same thing but marks the slot as protected. Use this when someone must have a specific month.
 
 Both respect the rolling model — you specify a month *and* a year.
+
+### Book Picks
+
+When a member runs `/pick` with a Goodreads URL, the bot scrapes the book title from the page and stores both the URL and title. The title appears as a clickable link in `/schedule`, `/next`, and `/history`. If the scrape fails, it falls back to showing just the URL.
+
+Members can only set the pick for their own upcoming slot. Admins can specify a month and year to set it for any slot.
 
 ## Setup
 
@@ -73,7 +85,7 @@ REMINDER_HOUR=10
 
 ### 5. Add Members
 
-Edit `data/schedule.json` and add your book club members. Get each person's Discord user ID by right-clicking them > **Copy User ID** (requires Developer Mode).
+You can add members via the `/addmember` slash command, or edit `data/schedule.json` directly:
 
 ```json
 {
@@ -86,6 +98,8 @@ Edit `data/schedule.json` and add your book club members. Get each person's Disc
   "exclusions": []
 }
 ```
+
+Get Discord user IDs by right-clicking a user > **Copy User ID** (requires Developer Mode).
 
 The member count doesn't need to match any particular number. When you `/randomize`, the bot creates a window of N upcoming months (where N = member count), and fills any empty slots in that window.
 
@@ -144,7 +158,7 @@ The schedule is rolling — it spans across years rather than resetting each Jan
 
 When you run `/randomize`:
 
-1. It looks at the next N active months starting from next month (where N = member count), skipping December
+1. It looks at the next N active months starting from next month (where N = member count), skipping December. You can optionally specify a start month and year.
 2. Slots that already have someone assigned (via `/assign`, `/pin`, or a previous `/randomize`) are left alone
 3. Members already assigned in that window are excluded from the randomization
 4. Remaining members are shuffled into remaining empty slots, respecting exclusions

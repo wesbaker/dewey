@@ -3,6 +3,7 @@ import type { Command } from "../types.js";
 import { MONTH_CHOICES, formatSlot } from "../types.js";
 import { readSchedule, writeSchedule } from "../data.js";
 import { currentYearMonth } from "../rotation.js";
+import { scrapeGoodreadsTitle } from "../goodreads.js";
 
 const ADMIN_ID = "286876274037882880";
 
@@ -46,6 +47,9 @@ export default {
       return;
     }
 
+    // Defer since Goodreads scraping may take a moment
+    await interaction.deferReply();
+
     const schedule = readSchedule();
     const { year: nowYear, month: nowMonth } = currentYearMonth();
 
@@ -54,11 +58,9 @@ export default {
     if (monthStr && yearOpt) {
       // Explicit month+year — admin only
       if (!isAdmin) {
-        await interaction.reply({
-          content:
-            "Only an admin can specify a month and year. Just use `/pick <url>` to set the book for your assigned month.",
-          ephemeral: true,
-        });
+        await interaction.editReply(
+          "Only an admin can specify a month and year. Just use `/pick <url>` to set the book for your assigned month."
+        );
         return;
       }
       const month = parseInt(monthStr, 10);
@@ -66,18 +68,15 @@ export default {
         (s) => s.year === yearOpt && s.month === month
       );
       if (targetSlot === -1) {
-        await interaction.reply({
-          content: `No one is assigned to ${formatSlot(yearOpt, month)}.`,
-          ephemeral: true,
-        });
+        await interaction.editReply(
+          `No one is assigned to ${formatSlot(yearOpt, month)}.`
+        );
         return;
       }
     } else if (monthStr || yearOpt) {
-      await interaction.reply({
-        content:
-          "Please provide both month and year, or neither (to use your assigned month).",
-        ephemeral: true,
-      });
+      await interaction.editReply(
+        "Please provide both month and year, or neither (to use your assigned month)."
+      );
       return;
     } else {
       // Find the caller's current or next future slot
@@ -87,24 +86,31 @@ export default {
           (s.year > nowYear || (s.year === nowYear && s.month >= nowMonth))
       );
       if (targetSlot === -1) {
-        await interaction.reply({
-          content:
-            "You don't have an upcoming slot in the rotation. Ask an admin to assign you one.",
-          ephemeral: true,
-        });
+        await interaction.editReply(
+          "You don't have an upcoming slot in the rotation. Ask an admin to assign you one."
+        );
         return;
       }
     }
 
+    // Scrape the book title from Goodreads
+    const bookTitle = await scrapeGoodreadsTitle(url);
+
     schedule.rotation[targetSlot].bookUrl = url;
+    if (bookTitle) {
+      schedule.rotation[targetSlot].bookTitle = bookTitle;
+    }
     writeSchedule(schedule);
 
     const slot = schedule.rotation[targetSlot];
-    const member = schedule.members.find((m) => m.discordId === slot.memberId);
+    const member = schedule.members.find(
+      (m) => m.discordId === slot.memberId
+    );
     const label = formatSlot(slot.year, slot.month);
+    const titleDisplay = bookTitle ? `**${bookTitle}**\n${url}` : url;
 
-    await interaction.reply({
-      content: `📚 Book picked for **${label}** (${member?.name ?? "unknown"}): ${url}`,
-    });
+    await interaction.editReply(
+      `📚 Book picked for **${label}** (${member?.name ?? "unknown"}):\n${titleDisplay}`
+    );
   },
 } satisfies Command;
