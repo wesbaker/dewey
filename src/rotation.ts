@@ -105,10 +105,19 @@ export function getMemberSlot(
 export function fillRotationGaps(
   members: Member[],
   existingRotation: RotationSlot[],
-  exclusions: Exclusion[]
+  exclusions: Exclusion[],
+  startOverride?: { year: number; month: number }
 ): RotationSlot[] {
-  const { year: nowYear, month: nowMonth } = currentYearMonth();
-  const startYM = nextActiveYearMonth(nowYear, nowMonth);
+  let startYM: { year: number; month: number };
+  if (startOverride) {
+    // Use the override directly (inclusive — start from this month)
+    startYM = isActiveMonth(startOverride.month)
+      ? startOverride
+      : nextActiveYearMonth(startOverride.year, startOverride.month);
+  } else {
+    const { year: nowYear, month: nowMonth } = currentYearMonth();
+    startYM = nextActiveYearMonth(nowYear, nowMonth);
+  }
 
   // Window = one slot per member, starting from next month
   const window = getActiveMonthWindow(

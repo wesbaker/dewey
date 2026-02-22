@@ -14,6 +14,7 @@ export interface RotationSlot {
   month: number; // 1–11 (December is always skipped)
   memberId: string;
   pin: boolean; // true = manually pinned, preserved across /randomize
+  bookUrl?: string; // Goodreads URL for the picked book
 }
 
 export interface Exclusion {

@@ -47,7 +47,8 @@ export default {
         slot.year === nowYear && slot.month === nowMonth
           ? " ← *this month*"
           : "";
-      return `**${formatSlot(slot.year, slot.month)}**: ${name}${pin}${current}`;
+      const book = slot.bookUrl ? ` — [book](${slot.bookUrl})` : "";
+      return `**${formatSlot(slot.year, slot.month)}**: ${name}${pin}${book}${current}`;
     });
 
     const embed = new EmbedBuilder()

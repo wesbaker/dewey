@@ -38,12 +38,19 @@ export default {
     const name = member?.name ?? `<@${slot.memberId}>`;
     const label = formatSlot(year, month);
 
+    const lines = [
+      `**${name}** (<@${slot.memberId}>) is picking the book for **${label}**.`,
+    ];
+    if (slot.pin) lines.push("📌 *(pinned slot)*");
+    if (slot.bookUrl) {
+      lines.push(`\n📖 **Book picked:** ${slot.bookUrl}`);
+    } else {
+      lines.push(`\n*No book picked yet — use \`/pick\` to set one.*`);
+    }
+
     const embed = new EmbedBuilder()
       .setTitle(`📚 Next Up: ${label}`)
-      .setDescription(
-        `**${name}** (<@${slot.memberId}>) is picking the book for **${label}**.` +
-          (slot.pin ? "\n📌 *(pinned slot)*" : "")
-      )
+      .setDescription(lines.join("\n"))
       .setColor(0x57f287);
 
     await interaction.reply({ embeds: [embed] });
