@@ -8,7 +8,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName("randomize")
     .setDescription(
-      "Fill empty upcoming slots with randomized member assignments (Admin only)"
+      "Randomize upcoming slots, keeping pinned and book-picked assignments (Admin only)"
     )
     .addStringOption((opt) =>
       opt

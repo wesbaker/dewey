@@ -2,6 +2,7 @@ import type { Member, RotationSlot, Exclusion } from "./types.js";
 import { isActiveMonth, compareSlots } from "./types.js";
 
 const MAX_ATTEMPTS = 1000;
+const MIN_SPACING = 3; // minimum active months between picks for the same member
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -73,6 +74,22 @@ export function getActiveMonthWindow(
   return result;
 }
 
+/**
+ * Count the number of active months between two year+month pairs (exclusive).
+ * E.g. distance from Nov 2026 to Jan 2027 is 1 (December is skipped).
+ * Returns the absolute distance regardless of order.
+ */
+export function activeMonthDistance(
+  a: { year: number; month: number },
+  b: { year: number; month: number }
+): number {
+  // Convert each to a sequential "active month index" to make distance easy.
+  // Each year has 11 active months (1–11). Index = year * 11 + (month - 1).
+  const indexA = a.year * 11 + (a.month - 1);
+  const indexB = b.year * 11 + (b.month - 1);
+  return Math.abs(indexA - indexB);
+}
+
 /** Find a rotation slot for a specific year+month. */
 export function getSlotForYearMonth(
   rotation: RotationSlot[],
@@ -94,13 +111,15 @@ export function getMemberSlot(
  * Fill empty slots in the rotation with randomized member assignments.
  *
  * Algorithm:
- * 1. Determine the window: next N active months starting from the first month
- *    after the current month, where N = number of members.
- * 2. Identify which slots in that window are already filled (pinned or previously assigned).
- * 3. Identify which members are already assigned in that window.
- * 4. Randomize remaining members into remaining slots, respecting exclusions.
- *
- * Only fills gaps — existing assignments are never overwritten.
+ * 1. Determine the window: next N active months starting from the specified or
+ *    next month, where N = number of members.
+ * 2. Clear any non-pinned, non-book-picked slots in the window (so re-randomizing
+ *    actually reshuffles).
+ * 3. Identify which slots are locked (pinned or have a book pick).
+ * 4. Randomize remaining members into remaining slots, respecting:
+ *    - Calendar month exclusions
+ *    - Minimum 3 active-month spacing between any two picks by the same member
+ *      (including slots outside the window, like prior/future months)
  */
 export function fillRotationGaps(
   members: Member[],
@@ -110,7 +129,6 @@ export function fillRotationGaps(
 ): RotationSlot[] {
   let startYM: { year: number; month: number };
   if (startOverride) {
-    // Use the override directly (inclusive — start from this month)
     startYM = isActiveMonth(startOverride.month)
       ? startOverride
       : nextActiveYearMonth(startOverride.year, startOverride.month);
@@ -119,41 +137,56 @@ export function fillRotationGaps(
     startYM = nextActiveYearMonth(nowYear, nowMonth);
   }
 
-  // Window = one slot per member, starting from next month
+  // Window = one slot per member, starting from the specified month
   const window = getActiveMonthWindow(
     startYM.year,
     startYM.month,
     members.length
   );
+  const windowKeys = new Set(window.map((ym) => `${ym.year}-${ym.month}`));
 
-  // Find which window slots are already filled
-  const filledSlots = new Map<string, RotationSlot>();
+  // Partition existing rotation into:
+  // - lockedSlots: inside the window AND (pinned OR has a book pick) — kept as-is
+  // - outsideSlots: outside the window — kept as-is (context for spacing)
+  // - cleared: inside the window, not pinned, no book pick — removed for re-randomizing
+  const lockedSlots: RotationSlot[] = [];
+  const outsideSlots: RotationSlot[] = [];
+
   for (const slot of existingRotation) {
-    filledSlots.set(`${slot.year}-${slot.month}`, slot);
-  }
-
-  const assignedMembers = new Set<string>();
-  const openSlots: { year: number; month: number }[] = [];
-
-  for (const ym of window) {
-    const key = `${ym.year}-${ym.month}`;
-    const existing = filledSlots.get(key);
-    if (existing) {
-      assignedMembers.add(existing.memberId);
+    const key = `${slot.year}-${slot.month}`;
+    if (windowKeys.has(key)) {
+      if (slot.pin || slot.bookUrl) {
+        lockedSlots.push(slot);
+      }
+      // else: cleared — dropped for re-randomizing
     } else {
-      openSlots.push(ym);
+      outsideSlots.push(slot);
     }
   }
 
+  // Members locked into the window (pinned or book-picked)
+  const lockedMembers = new Set(lockedSlots.map((s) => s.memberId));
+
+  // Open slots = window slots that don't have a locked entry
+  const lockedKeys = new Set(
+    lockedSlots.map((s) => `${s.year}-${s.month}`)
+  );
+  const openSlots = window.filter(
+    (ym) => !lockedKeys.has(`${ym.year}-${ym.month}`)
+  );
+
+  // Unassigned members = everyone not locked in the window
   const unassigned = members
     .map((m) => m.discordId)
-    .filter((id) => !assignedMembers.has(id));
+    .filter((id) => !lockedMembers.has(id));
 
   // If there are more open slots than unassigned members, only fill what we can
   const slotsToFill = openSlots.slice(0, unassigned.length);
 
   if (slotsToFill.length === 0) {
-    return existingRotation;
+    const result = [...outsideSlots, ...lockedSlots];
+    result.sort(compareSlots);
+    return result;
   }
 
   // Build exclusion map: memberId -> Set<month>
@@ -163,6 +196,35 @@ export function fillRotationGaps(
       exclusionMap.set(exc.memberId, new Set());
     }
     exclusionMap.get(exc.memberId)!.add(exc.month);
+  }
+
+  // All fixed slots (outside window + locked in window) for spacing checks
+  const fixedSlots = [...outsideSlots, ...lockedSlots];
+
+  // Check whether placing a member at a given year+month violates the spacing
+  // constraint relative to fixed slots and the current trial assignment.
+  function violatesSpacing(
+    memberId: string,
+    ym: { year: number; month: number },
+    trialAssigned: RotationSlot[]
+  ): boolean {
+    // Check against all existing fixed slots for this member
+    for (const slot of fixedSlots) {
+      if (slot.memberId === memberId) {
+        if (activeMonthDistance(ym, slot) < MIN_SPACING) {
+          return true;
+        }
+      }
+    }
+    // Check against slots assigned so far in this trial
+    for (const slot of trialAssigned) {
+      if (slot.memberId === memberId) {
+        if (activeMonthDistance(ym, slot) < MIN_SPACING) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   // Randomized greedy assignment with restarts
@@ -176,7 +238,9 @@ export function fillRotationGaps(
       const placed = new Set(assigned.map((a) => a.memberId));
       const candidate = shuffledMembers.find(
         (id) =>
-          !placed.has(id) && !(exclusionMap.get(id)?.has(ym.month) ?? false)
+          !placed.has(id) &&
+          !(exclusionMap.get(id)?.has(ym.month) ?? false) &&
+          !violatesSpacing(id, ym, assigned)
       );
 
       if (!candidate) {
@@ -193,7 +257,7 @@ export function fillRotationGaps(
     }
 
     if (success) {
-      const result = [...existingRotation, ...assigned];
+      const result = [...outsideSlots, ...lockedSlots, ...assigned];
       result.sort(compareSlots);
       return result;
     }
@@ -201,6 +265,7 @@ export function fillRotationGaps(
 
   throw new Error(
     `Could not build a valid rotation after ${MAX_ATTEMPTS} attempts. ` +
-      `Your exclusions may be over-constrained. Try removing some exclusions and re-randomizing.`
+      `Your exclusions or spacing constraints may be over-constrained. ` +
+      `Try removing some exclusions and re-randomizing.`
   );
 }

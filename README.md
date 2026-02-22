@@ -159,9 +159,12 @@ The schedule is rolling — it spans across years rather than resetting each Jan
 When you run `/randomize`:
 
 1. It looks at the next N active months starting from next month (where N = member count), skipping December. You can optionally specify a start month and year.
-2. Slots that already have someone assigned (via `/assign`, `/pin`, or a previous `/randomize`) are left alone
-3. Members already assigned in that window are excluded from the randomization
-4. Remaining members are shuffled into remaining empty slots, respecting exclusions
-5. If the constraints are unsatisfiable (too many exclusions), it tells you
+2. Slots that are **pinned** or have a **book pick** are kept as-is. All other slots in the window are cleared and reshuffled.
+3. Remaining members are shuffled into the open slots, respecting:
+   - Calendar month exclusions (via `/exclude`)
+   - **3-month spacing** — no member will be assigned within 3 active months of another pick (including picks outside the window, like the prior cycle)
+4. If the constraints are unsatisfiable (too many exclusions + spacing), it tells you
+
+Re-running `/randomize` produces a different result each time (unless constraints force only one valid arrangement).
 
 Swapping two members clears their pin flags since they're no longer in their pinned slots.
