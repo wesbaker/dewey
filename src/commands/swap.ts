@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
-import { MONTH_NAMES } from "../types.js";
+import { formatSlot } from "../types.js";
 import { readSchedule, writeSchedule } from "../data.js";
 
 export default {
@@ -54,17 +54,17 @@ export default {
 
     const slot1 = schedule.rotation[slot1Index];
     const slot2 = schedule.rotation[slot2Index];
-    const month1 = slot1.month;
-    const month2 = slot2.month;
 
     // Swap member IDs; clear pins since they're now in each other's slots
     schedule.rotation[slot1Index] = {
-      month: month1,
+      year: slot1.year,
+      month: slot1.month,
       memberId: user2.id,
       pin: false,
     };
     schedule.rotation[slot2Index] = {
-      month: month2,
+      year: slot2.year,
+      month: slot2.month,
       memberId: user1.id,
       pin: false,
     };
@@ -76,8 +76,8 @@ export default {
 
     await interaction.reply({
       content:
-        `Swapped **${member1?.name ?? user1.username}** (now ${MONTH_NAMES[month2]}) ` +
-        `and **${member2?.name ?? user2.username}** (now ${MONTH_NAMES[month1]}). ` +
+        `Swapped **${member1?.name ?? user1.username}** (now ${formatSlot(slot2.year, slot2.month)}) ` +
+        `and **${member2?.name ?? user2.username}** (now ${formatSlot(slot1.year, slot1.month)}). ` +
         `Note: any pins were cleared.`,
       ephemeral: true,
     });

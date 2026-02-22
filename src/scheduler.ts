@@ -1,8 +1,12 @@
 import cron from "node-cron";
 import { Client, TextChannel } from "discord.js";
 import { readSchedule } from "./data.js";
-import { getSlotForMonth, currentMonth, nextActiveMonth } from "./rotation.js";
-import { MONTH_NAMES } from "./types.js";
+import {
+  getSlotForYearMonth,
+  currentYearMonth,
+  nextActiveYearMonth,
+} from "./rotation.js";
+import { MONTH_NAMES, formatSlot } from "./types.js";
 
 export function initScheduler(client: Client): void {
   const reminderHour = process.env.REMINDER_HOUR ?? "10";
@@ -18,7 +22,7 @@ export function initScheduler(client: Client): void {
       return;
     }
 
-    const thisMonth = currentMonth();
+    const { year: thisYear, month: thisMonth } = currentYearMonth();
 
     // No reminders in December
     if (thisMonth === 12) return;
@@ -27,7 +31,9 @@ export function initScheduler(client: Client): void {
     try {
       const fetched = await client.channels.fetch(schedule.reminderChannelId);
       if (!fetched || !(fetched instanceof TextChannel)) {
-        console.warn("[scheduler] Reminder channel not found or is not a text channel.");
+        console.warn(
+          "[scheduler] Reminder channel not found or is not a text channel."
+        );
         return;
       }
       channel = fetched;
@@ -36,13 +42,20 @@ export function initScheduler(client: Client): void {
       return;
     }
 
-    const nextMonth = nextActiveMonth();
-    const currentSlot = getSlotForMonth(schedule.rotation, thisMonth);
-    const nextSlot = getSlotForMonth(schedule.rotation, nextMonth);
-    const memberMap = new Map(schedule.members.map((m) => [m.discordId, m.name]));
+    const nextYM = nextActiveYearMonth(thisYear, thisMonth);
+    const currentSlot = getSlotForYearMonth(
+      schedule.rotation,
+      thisYear,
+      thisMonth
+    );
+    const nextSlot = getSlotForYearMonth(
+      schedule.rotation,
+      nextYM.year,
+      nextYM.month
+    );
 
     const lines: string[] = [
-      `📅 **Mid-month book club reminder** (${MONTH_NAMES[thisMonth]}):`,
+      `📅 **Mid-month book club reminder** (${MONTH_NAMES[thisMonth]} ${thisYear}):`,
     ];
 
     if (currentSlot) {
@@ -50,16 +63,19 @@ export function initScheduler(client: Client): void {
         `📍 <@${currentSlot.memberId}> — don't forget to pick a **location** for this month's meetup!`
       );
     } else {
-      console.warn(`[scheduler] No rotation slot found for month ${thisMonth}`);
+      console.warn(
+        `[scheduler] No rotation slot found for ${formatSlot(thisYear, thisMonth)}`
+      );
     }
 
     if (nextSlot) {
-      const nextName = memberMap.get(nextSlot.memberId) ?? `<@${nextSlot.memberId}>`;
       lines.push(
-        `📚 <@${nextSlot.memberId}> — you're up in **${MONTH_NAMES[nextMonth]}**! Start thinking about your book pick, ${nextName}!`
+        `📚 <@${nextSlot.memberId}> — you're up in **${formatSlot(nextYM.year, nextYM.month)}**! Start thinking about your book pick!`
       );
     } else {
-      console.warn(`[scheduler] No rotation slot found for month ${nextMonth}`);
+      console.warn(
+        `[scheduler] No rotation slot found for ${formatSlot(nextYM.year, nextYM.month)}`
+      );
     }
 
     if (lines.length > 1) {

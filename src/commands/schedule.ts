@@ -1,12 +1,13 @@
 import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
-import { MONTH_NAMES } from "../types.js";
+import { formatSlot } from "../types.js";
 import { readSchedule } from "../data.js";
+import { currentYearMonth } from "../rotation.js";
 
 export default {
   data: new SlashCommandBuilder()
     .setName("schedule")
-    .setDescription("Show the full year's book club rotation"),
+    .setDescription("Show the book club rotation"),
 
   async execute(interaction) {
     const schedule = readSchedule();
@@ -20,18 +21,37 @@ export default {
       return;
     }
 
+    const { year: nowYear, month: nowMonth } = currentYearMonth();
     const memberMap = new Map(
       schedule.members.map((m) => [m.discordId, m.name])
     );
 
-    const lines = schedule.rotation.map((slot) => {
+    // Show current + future slots only
+    const futureSlots = schedule.rotation.filter(
+      (s) => s.year > nowYear || (s.year === nowYear && s.month >= nowMonth)
+    );
+
+    if (futureSlots.length === 0) {
+      await interaction.reply({
+        content:
+          "All scheduled months are in the past. An admin can use `/randomize` to fill in upcoming months.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const lines = futureSlots.map((slot) => {
       const name = memberMap.get(slot.memberId) ?? `<@${slot.memberId}>`;
       const pin = slot.pin ? " 📌" : "";
-      return `**${MONTH_NAMES[slot.month]}**: ${name}${pin}`;
+      const current =
+        slot.year === nowYear && slot.month === nowMonth
+          ? " ← *this month*"
+          : "";
+      return `**${formatSlot(slot.year, slot.month)}**: ${name}${pin}${current}`;
     });
 
     const embed = new EmbedBuilder()
-      .setTitle(`📖 Book Club Schedule — ${schedule.year}`)
+      .setTitle("📖 Book Club Schedule")
       .setDescription(lines.join("\n"))
       .setColor(0x5865f2);
 

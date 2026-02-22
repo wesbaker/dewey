@@ -10,6 +10,7 @@ export interface Member {
 }
 
 export interface RotationSlot {
+  year: number;
   month: number; // 1–11 (December is always skipped)
   memberId: string;
   pin: boolean; // true = manually pinned, preserved across /randomize
@@ -17,12 +18,11 @@ export interface RotationSlot {
 
 export interface Exclusion {
   memberId: string;
-  month: number; // 1–11
+  month: number; // 1–11 (applies to that calendar month every year)
 }
 
 export interface Schedule {
   reminderChannelId: string | null;
-  year: number;
   members: Member[];
   rotation: RotationSlot[];
   exclusions: Exclusion[];
@@ -33,9 +33,6 @@ export interface Command {
   adminOnly?: boolean;
   execute(interaction: ChatInputCommandInteraction): Promise<void>;
 }
-
-// Months 1–11 available for the rotation (December always empty)
-export const ACTIVE_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 
 export const MONTH_NAMES: Record<number, string> = {
   1: "January",
@@ -51,15 +48,30 @@ export const MONTH_NAMES: Record<number, string> = {
   11: "November",
 };
 
-// For use in SlashCommandBuilder .addChoices()
-export const MONTH_CHOICES = ACTIVE_MONTHS.map((m) => ({
-  name: MONTH_NAMES[m],
-  value: String(m),
+/** Month choices for slash commands (January–November). */
+export const MONTH_CHOICES = Object.entries(MONTH_NAMES).map(([k, v]) => ({
+  name: v,
+  value: k,
 }));
 
-export function monthNameToNumber(name: string): number | null {
-  const entry = Object.entries(MONTH_NAMES).find(
-    ([, v]) => v.toLowerCase() === name.toLowerCase()
-  );
-  return entry ? parseInt(entry[0], 10) : null;
+/** Returns true if a month is active (not December). */
+export function isActiveMonth(month: number): boolean {
+  return month >= 1 && month <= 11;
+}
+
+/** Format a slot's year+month for display, e.g. "March 2026". */
+export function formatSlot(year: number, month: number): string {
+  return `${MONTH_NAMES[month]} ${year}`;
+}
+
+/**
+ * Compare two year+month pairs for sorting.
+ * Returns negative if a is before b, positive if after, 0 if equal.
+ */
+export function compareSlots(
+  a: { year: number; month: number },
+  b: { year: number; month: number }
+): number {
+  if (a.year !== b.year) return a.year - b.year;
+  return a.month - b.month;
 }

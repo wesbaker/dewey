@@ -1,6 +1,5 @@
 {
   "reminderChannelId": null,
-  "year": 2026,
   "members": [
     {
       "discordId": "286876274037882880",
@@ -53,6 +52,19 @@
   ],
   "rotation": [
     {
+      "year": 2026,
+      "month": 3,
+      "memberId": "805238470913687552",
+      "pin": false
+    },
+    {
+      "year": 2026,
+      "month": 4,
+      "memberId": "347443800311857164",
+      "pin": false
+    },
+    {
+      "year": 2026,
       "month": 11,
       "memberId": "805238470913687552",
       "pin": true

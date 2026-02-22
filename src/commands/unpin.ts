@@ -1,12 +1,14 @@
 import { SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
-import { MONTH_NAMES } from "../types.js";
+import { formatSlot } from "../types.js";
 import { readSchedule, writeSchedule } from "../data.js";
 
 export default {
   data: new SlashCommandBuilder()
     .setName("unpin")
-    .setDescription("Remove a member's pin from their assigned month (Admin only)")
+    .setDescription(
+      "Remove a member's pin from their assigned month (Admin only)"
+    )
     .addUserOption((opt) =>
       opt
         .setName("user")
@@ -26,18 +28,18 @@ export default {
 
     if (slotIndex === -1) {
       await interaction.reply({
-        content: `${user.username} doesn't have a pinned month.`,
+        content: `${user.username} doesn't have a pinned slot.`,
         ephemeral: true,
       });
       return;
     }
 
-    const month = schedule.rotation[slotIndex].month;
+    const slot = schedule.rotation[slotIndex];
     schedule.rotation[slotIndex].pin = false;
     writeSchedule(schedule);
 
     await interaction.reply({
-      content: `Unpinned **${user.username}** from **${MONTH_NAMES[month]}**. They remain in that slot but will be re-randomized on the next \`/randomize\`.`,
+      content: `Unpinned **${user.username}** from **${formatSlot(slot.year, slot.month)}**. They remain in that slot but it won't be preserved if you re-randomize.`,
       ephemeral: true,
     });
   },

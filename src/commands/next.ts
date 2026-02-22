@@ -1,8 +1,8 @@
 import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
-import { MONTH_NAMES } from "../types.js";
+import { formatSlot } from "../types.js";
 import { readSchedule } from "../data.js";
-import { getSlotForMonth, nextActiveMonth } from "../rotation.js";
+import { getSlotForYearMonth, nextActiveFromNow } from "../rotation.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -21,24 +21,27 @@ export default {
       return;
     }
 
-    const month = nextActiveMonth();
-    const slot = getSlotForMonth(schedule.rotation, month);
+    const { year, month } = nextActiveFromNow();
+    const slot = getSlotForYearMonth(schedule.rotation, year, month);
 
     if (!slot) {
       await interaction.reply({
-        content: `No one is assigned to ${MONTH_NAMES[month]} yet.`,
+        content: `No one is assigned to ${formatSlot(year, month)} yet. An admin can use \`/randomize\` to fill it in.`,
         ephemeral: true,
       });
       return;
     }
 
-    const member = schedule.members.find((m) => m.discordId === slot.memberId);
+    const member = schedule.members.find(
+      (m) => m.discordId === slot.memberId
+    );
     const name = member?.name ?? `<@${slot.memberId}>`;
+    const label = formatSlot(year, month);
 
     const embed = new EmbedBuilder()
-      .setTitle(`📚 Next Up: ${MONTH_NAMES[month]}`)
+      .setTitle(`📚 Next Up: ${label}`)
       .setDescription(
-        `**${name}** (<@${slot.memberId}>) is picking the book for **${MONTH_NAMES[month]}**.` +
+        `**${name}** (<@${slot.memberId}>) is picking the book for **${label}**.` +
           (slot.pin ? "\n📌 *(pinned slot)*" : "")
       )
       .setColor(0x57f287);

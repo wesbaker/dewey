@@ -1,11 +1,12 @@
 # Dewey
 
-A Discord bot for managing a book club rotation. Randomizes who picks the book each month, supports pinning members to specific months, excluding members from months, and sends mid-month reminders.
+A Discord bot for managing a book club rotation. Randomizes who picks the book each month, supports pinning and assigning members to specific months, excluding members from months, and sends mid-month reminders.
 
 ## Features
 
-- **11-month rotation** (December is always off)
-- **Randomization** respecting pinned slots and exclusions
+- **Rolling schedule** across years (December is always off)
+- **Randomization** that fills empty slots without overwriting existing assignments
+- **Pin and assign** members to specific year+month slots
 - **Mid-month reminders** on the 15th — nudges the current picker about a location and the next picker about their book
 - **Slash commands** for managing the schedule
 
@@ -13,15 +14,23 @@ A Discord bot for managing a book club rotation. Randomizes who picks the book e
 
 | Command | Description | Admin |
 |---|---|---|
-| `/schedule` | Show the full year's rotation | |
+| `/schedule` | Show current and upcoming rotation | |
 | `/next` | Show who picks next month | |
-| `/randomize` | Re-randomize the rotation | Yes |
-| `/pin @user <month>` | Pin a member to a specific month | Yes |
+| `/randomize` | Fill empty upcoming slots with randomized assignments | Yes |
+| `/assign @user <month> <year>` | Assign a member to a specific month | Yes |
+| `/pin @user <month> <year>` | Pin a member to a month (protected from randomize) | Yes |
 | `/unpin @user` | Remove a pin | Yes |
-| `/exclude @user <month>` | Exclude a member from a month | Yes |
+| `/exclude @user <month>` | Exclude a member from a calendar month | Yes |
 | `/unexclude @user <month>` | Remove an exclusion | Yes |
 | `/swap @user1 @user2` | Swap two members' months | Yes |
 | `/setchannel #channel` | Set the reminder channel | Yes |
+
+### Assign vs Pin
+
+- **`/assign`** places someone in a slot. If you later run `/randomize`, it treats that slot as filled and won't touch it.
+- **`/pin`** does the same thing but marks the slot as protected. Use this when someone must have a specific month.
+
+Both respect the rolling model — you specify a month *and* a year.
 
 ## Setup
 
@@ -43,7 +52,7 @@ Go to **OAuth2 > URL Generator** in the developer portal:
 
 Copy the generated URL and open it in your browser to invite the bot.
 
-### 3. Get Your Guild ID
+### 3. Get Your Server ID
 
 In Discord, enable **Developer Mode** (User Settings > Advanced > Developer Mode). Then right-click your server name and **Copy Server ID**. This is your `SERVER_ID`.
 
@@ -69,7 +78,6 @@ Edit `data/schedule.json` and add your book club members. Get each person's Disc
 ```json
 {
   "reminderChannelId": null,
-  "year": 2026,
   "members": [
     { "discordId": "123456789012345678", "name": "Alice" },
     { "discordId": "234567890123456789", "name": "Bob" }
@@ -79,7 +87,7 @@ Edit `data/schedule.json` and add your book club members. Get each person's Disc
 }
 ```
 
-You need exactly 11 members in the rotation (13 total minus 2 pinned, or 11 with no pins — the math just needs to work out to 11 slots).
+The member count doesn't need to match any particular number. When you `/randomize`, the bot creates a window of N upcoming months (where N = member count), and fills any empty slots in that window.
 
 ### 6. Install and Run
 
@@ -132,11 +140,14 @@ pm2 restart dewey
 
 ## How the Rotation Works
 
-The randomizer uses a Las Vegas algorithm:
+The schedule is rolling — it spans across years rather than resetting each January.
 
-1. Pinned members are placed in their assigned months first
-2. Remaining members are shuffled into remaining months
-3. Exclusions are respected — a member excluded from July will never land there
-4. If the constraints are unsatisfiable (too many exclusions), it tells you
+When you run `/randomize`:
+
+1. It looks at the next N active months starting from next month (where N = member count), skipping December
+2. Slots that already have someone assigned (via `/assign`, `/pin`, or a previous `/randomize`) are left alone
+3. Members already assigned in that window are excluded from the randomization
+4. Remaining members are shuffled into remaining empty slots, respecting exclusions
+5. If the constraints are unsatisfiable (too many exclusions), it tells you
 
 Swapping two members clears their pin flags since they're no longer in their pinned slots.

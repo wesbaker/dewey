@@ -1,5 +1,5 @@
 import type { Member, RotationSlot, Exclusion } from "./types.js";
-import { ACTIVE_MONTHS } from "./types.js";
+import { isActiveMonth, compareSlots } from "./types.js";
 
 const MAX_ATTEMPTS = 1000;
 
@@ -12,44 +12,142 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-/**
- * Build a full 11-month rotation respecting pinned slots and exclusions.
- *
- * Pinned slots are placed first. Remaining members are assigned to remaining
- * months using a randomized greedy algorithm with full restarts (Las Vegas).
- */
-export function buildRotation(
-  members: Member[],
-  pinnedSlots: RotationSlot[],
-  exclusions: Exclusion[]
-): RotationSlot[] {
-  const result: RotationSlot[] = [];
-  const assignedMonths = new Set<number>();
-  const assignedMembers = new Set<string>();
+/** Advance to the next active month (skipping December). */
+export function nextActiveYearMonth(
+  year: number,
+  month: number
+): { year: number; month: number } {
+  let m = month + 1;
+  let y = year;
+  if (m > 12) {
+    m = 1;
+    y++;
+  }
+  // Skip December
+  if (m === 12) {
+    m = 1;
+    y++;
+  }
+  return { year: y, month: m };
+}
 
-  // Step 1: Place pinned slots
-  for (const pin of pinnedSlots) {
-    if (!ACTIVE_MONTHS.includes(pin.month as (typeof ACTIVE_MONTHS)[number])) {
-      throw new Error(`Month ${pin.month} is not an active month (1–11 only)`);
-    }
-    result.push({ month: pin.month, memberId: pin.memberId, pin: true });
-    assignedMonths.add(pin.month);
-    assignedMembers.add(pin.memberId);
+/** Get current year and month. */
+export function currentYearMonth(): { year: number; month: number } {
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
+
+/** Get the next active year+month from now. */
+export function nextActiveFromNow(): { year: number; month: number } {
+  const { year, month } = currentYearMonth();
+  return nextActiveYearMonth(year, month);
+}
+
+/**
+ * Generate a list of the next N active months (skipping December),
+ * starting from a given year+month (inclusive if it's active, otherwise next active).
+ */
+export function getActiveMonthWindow(
+  startYear: number,
+  startMonth: number,
+  count: number
+): { year: number; month: number }[] {
+  const result: { year: number; month: number }[] = [];
+  let y = startYear;
+  let m = startMonth;
+
+  // If starting month is December, advance
+  if (!isActiveMonth(m)) {
+    const next = nextActiveYearMonth(y, m);
+    y = next.year;
+    m = next.month;
   }
 
-  const openMonths = ACTIVE_MONTHS.filter((m) => !assignedMonths.has(m));
+  while (result.length < count) {
+    result.push({ year: y, month: m });
+    const next = nextActiveYearMonth(y, m);
+    y = next.year;
+    m = next.month;
+  }
+
+  return result;
+}
+
+/** Find a rotation slot for a specific year+month. */
+export function getSlotForYearMonth(
+  rotation: RotationSlot[],
+  year: number,
+  month: number
+): RotationSlot | undefined {
+  return rotation.find((s) => s.year === year && s.month === month);
+}
+
+/** Find which slot a member is assigned to (first future occurrence). */
+export function getMemberSlot(
+  rotation: RotationSlot[],
+  memberId: string
+): RotationSlot | undefined {
+  return rotation.find((s) => s.memberId === memberId);
+}
+
+/**
+ * Fill empty slots in the rotation with randomized member assignments.
+ *
+ * Algorithm:
+ * 1. Determine the window: next N active months starting from the first month
+ *    after the current month, where N = number of members.
+ * 2. Identify which slots in that window are already filled (pinned or previously assigned).
+ * 3. Identify which members are already assigned in that window.
+ * 4. Randomize remaining members into remaining slots, respecting exclusions.
+ *
+ * Only fills gaps — existing assignments are never overwritten.
+ */
+export function fillRotationGaps(
+  members: Member[],
+  existingRotation: RotationSlot[],
+  exclusions: Exclusion[]
+): RotationSlot[] {
+  const { year: nowYear, month: nowMonth } = currentYearMonth();
+  const startYM = nextActiveYearMonth(nowYear, nowMonth);
+
+  // Window = one slot per member, starting from next month
+  const window = getActiveMonthWindow(
+    startYM.year,
+    startYM.month,
+    members.length
+  );
+
+  // Find which window slots are already filled
+  const filledSlots = new Map<string, RotationSlot>();
+  for (const slot of existingRotation) {
+    filledSlots.set(`${slot.year}-${slot.month}`, slot);
+  }
+
+  const assignedMembers = new Set<string>();
+  const openSlots: { year: number; month: number }[] = [];
+
+  for (const ym of window) {
+    const key = `${ym.year}-${ym.month}`;
+    const existing = filledSlots.get(key);
+    if (existing) {
+      assignedMembers.add(existing.memberId);
+    } else {
+      openSlots.push(ym);
+    }
+  }
+
   const unassigned = members
     .map((m) => m.discordId)
     .filter((id) => !assignedMembers.has(id));
 
-  if (unassigned.length !== openMonths.length) {
-    throw new Error(
-      `Cannot build rotation: ${unassigned.length} unassigned members for ${openMonths.length} open months. ` +
-        `Make sure the member list has exactly ${ACTIVE_MONTHS.length} people (with ${pinnedSlots.length} pinned).`
-    );
+  // If there are more open slots than unassigned members, only fill what we can
+  const slotsToFill = openSlots.slice(0, unassigned.length);
+
+  if (slotsToFill.length === 0) {
+    return existingRotation;
   }
 
-  // Step 2: Build exclusion map
+  // Build exclusion map: memberId -> Set<month>
   const exclusionMap = new Map<string, Set<number>>();
   for (const exc of exclusions) {
     if (!exclusionMap.has(exc.memberId)) {
@@ -58,19 +156,18 @@ export function buildRotation(
     exclusionMap.get(exc.memberId)!.add(exc.month);
   }
 
-  // Step 3: Randomized greedy assignment with restarts
+  // Randomized greedy assignment with restarts
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const shuffledMembers = shuffle(unassigned);
-    const shuffledMonths = shuffle([...openMonths]);
+    const shuffledSlots = shuffle(slotsToFill);
     const assigned: RotationSlot[] = [];
     let success = true;
 
-    for (const month of shuffledMonths) {
+    for (const ym of shuffledSlots) {
       const placed = new Set(assigned.map((a) => a.memberId));
       const candidate = shuffledMembers.find(
         (id) =>
-          !placed.has(id) &&
-          !(exclusionMap.get(id)?.has(month) ?? false)
+          !placed.has(id) && !(exclusionMap.get(id)?.has(ym.month) ?? false)
       );
 
       if (!candidate) {
@@ -78,11 +175,18 @@ export function buildRotation(
         break;
       }
 
-      assigned.push({ month, memberId: candidate, pin: false });
+      assigned.push({
+        year: ym.year,
+        month: ym.month,
+        memberId: candidate,
+        pin: false,
+      });
     }
 
     if (success) {
-      return [...result, ...assigned].sort((a, b) => a.month - b.month);
+      const result = [...existingRotation, ...assigned];
+      result.sort(compareSlots);
+      return result;
     }
   }
 
@@ -90,29 +194,4 @@ export function buildRotation(
     `Could not build a valid rotation after ${MAX_ATTEMPTS} attempts. ` +
       `Your exclusions may be over-constrained. Try removing some exclusions and re-randomizing.`
   );
-}
-
-export function getSlotForMonth(
-  rotation: RotationSlot[],
-  month: number
-): RotationSlot | undefined {
-  return rotation.find((s) => s.month === month);
-}
-
-export function getMemberSlot(
-  rotation: RotationSlot[],
-  memberId: string
-): RotationSlot | undefined {
-  return rotation.find((s) => s.memberId === memberId);
-}
-
-export function currentMonth(): number {
-  return new Date().getMonth() + 1;
-}
-
-/** Returns the next active month, wrapping November back to January (skipping December). */
-export function nextActiveMonth(): number {
-  const m = currentMonth();
-  if (m >= 11) return 1; // November or December → January
-  return m + 1;
 }
