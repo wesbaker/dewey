@@ -1,18 +1,18 @@
 import cron from "node-cron";
 import { Client, TextChannel } from "discord.js";
+import { config } from "./config.js";
 import { readSchedule } from "./data.js";
 import {
   getSlotForYearMonth,
   currentYearMonth,
+  getActiveMonthWindow,
   nextActiveYearMonth,
 } from "./rotation.js";
 import { MONTH_NAMES, formatSlot } from "./types.js";
 
 export function initScheduler(client: Client): void {
-  const reminderHour = process.env.REMINDER_HOUR ?? "10";
-
   // Fire at the configured hour on the 15th of every month
-  cron.schedule(`0 ${reminderHour} 15 * *`, async () => {
+  cron.schedule(`0 ${config.reminderHour} 15 * *`, async () => {
     const schedule = readSchedule();
 
     if (!schedule.reminderChannelId) {
@@ -78,12 +78,26 @@ export function initScheduler(client: Client): void {
       );
     }
 
+    const coverageWindow = getActiveMonthWindow(nextYM.year, nextYM.month, 3);
+    const missingMonths = coverageWindow.filter(
+      (ym) => !getSlotForYearMonth(schedule.rotation, ym.year, ym.month)
+    );
+
+    if (missingMonths.length > 0) {
+      const missingLabels = missingMonths
+        .map((slot) => `**${formatSlot(slot.year, slot.month)}**`)
+        .join(", ");
+      lines.push(
+        `⚠️ <@${config.adminDiscordId}> — no one is assigned to ${missingLabels} yet.`
+      );
+    }
+
     if (lines.length > 1) {
       await channel.send(lines.join("\n"));
     }
   });
 
   console.log(
-    `[scheduler] Reminders scheduled for the 15th of each month at ${reminderHour}:00`
+    `[scheduler] Reminders scheduled for the 15th of each month at ${config.reminderHour}:00`
   );
 }

@@ -10,16 +10,10 @@ import { readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Command } from "./types.js";
+import { config } from "./config.js";
 import { initScheduler } from "./scheduler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const { DISCORD_TOKEN, APPLICATION_ID, SERVER_ID } = process.env;
-if (!DISCORD_TOKEN || !APPLICATION_ID || !SERVER_ID) {
-  throw new Error(
-    "Missing required environment variables: DISCORD_TOKEN, APPLICATION_ID, SERVER_ID"
-  );
-}
 
 // Load all command files dynamically
 const commands = new Collection<string, Command>();
@@ -37,10 +31,13 @@ for (const file of readdirSync(commandsDir).filter(
 }
 
 // Register slash commands with Discord (guild-scoped = instant)
-const rest = new REST().setToken(DISCORD_TOKEN);
-await rest.put(Routes.applicationGuildCommands(APPLICATION_ID, SERVER_ID), {
+const rest = new REST().setToken(config.discordToken);
+await rest.put(
+  Routes.applicationGuildCommands(config.applicationId, config.serverId),
+  {
   body: commandData,
-});
+  }
+);
 console.log(`[dewey] Registered ${commandData.length} slash commands`);
 
 // Create the bot client (only needs Guilds intent for slash commands)
@@ -91,4 +88,4 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-await client.login(DISCORD_TOKEN);
+await client.login(config.discordToken);

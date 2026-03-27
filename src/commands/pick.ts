@@ -3,9 +3,8 @@ import type { Command } from "../types.js";
 import { MONTH_CHOICES, formatSlot } from "../types.js";
 import { readSchedule, writeSchedule } from "../data.js";
 import { currentYearMonth } from "../rotation.js";
+import { config } from "../config.js";
 import { scrapeGoodreadsTitle } from "../goodreads.js";
-
-const ADMIN_ID = "286876274037882880";
 
 export default {
   data: new SlashCommandBuilder()
@@ -36,7 +35,7 @@ export default {
     const monthStr = interaction.options.getString("month");
     const yearOpt = interaction.options.getInteger("year");
     const userId = interaction.user.id;
-    const isAdmin = userId === ADMIN_ID;
+    const isAdmin = userId === config.adminDiscordId;
 
     // Validate URL looks like a Goodreads link
     if (!url.includes("goodreads.com")) {
