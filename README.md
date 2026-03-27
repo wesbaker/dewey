@@ -8,7 +8,8 @@ A Discord bot for managing a book club rotation. Randomizes who picks the book e
 - **Randomization** that fills empty slots without overwriting existing assignments
 - **Pin and assign** members to specific year+month slots
 - **Book tracking** — members set their pick with a Goodreads URL, title is scraped automatically
-- **Mid-month reminders** on the 15th — nudges the current picker about a location and the next picker about their book
+- **Mid-month reminders** on the 15th — nudges the current picker about a location, the next picker about their book, and the admin if the next 3 active months are not fully assigned
+- **Book source links** in `/next` — shows Goodreads plus Amazon, Audible, Libby, and Hoopla links for picked books
 - **Slash commands** for managing the schedule
 
 ### Commands
@@ -16,7 +17,7 @@ A Discord bot for managing a book club rotation. Randomizes who picks the book e
 | Command | Description | Admin |
 |---|---|---|
 | `/schedule` | Show current and upcoming rotation | |
-| `/next` | Show who picks next month (with book if picked) | |
+| `/next` | Show who picks next month (with book and source links if picked) | |
 | `/history` | Show past months and book picks | |
 | `/pick <url>` | Set your book pick (Goodreads URL) | |
 | `/pick <url> <month> <year>` | Set a book pick for a specific slot | Yes |
@@ -80,6 +81,7 @@ Fill in the values:
 DISCORD_TOKEN=your_bot_token
 APPLICATION_ID=your_application_id
 SERVER_ID=your_server_id
+ADMIN_DISCORD_ID=your_discord_user_id
 REMINDER_HOUR=10
 ```
 
@@ -126,16 +128,18 @@ The bot should come online and register its slash commands. Then in Discord:
 
 ```bash
 npm run dev    # watches for changes and restarts
+npm run preview:next   # prints the current /next reply payload from local schedule data
 ```
 
 ## Production (Raspberry Pi / PM2)
 
 ```bash
 git clone <your-repo> ~/dewey && cd ~/dewey
-npm install
+npm ci
 cp .env.example .env && nano .env
 
 # Update the cwd path in ecosystem.config.cjs to match your Pi
+npm run build
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup    # follow the printed sudo command
@@ -147,13 +151,36 @@ Set your Pi's timezone so reminders fire at the right local time:
 sudo timedatectl set-timezone America/Chicago
 ```
 
-### Updating
+### Automatic Deploys from GitHub
+
+```bash
+cd ~/actions-runner
+# install a GitHub Actions self-hosted runner here and register it to the repo
+```
+
+Then make sure:
+
+- the runner service is running on the Raspberry Pi
+- the app repo lives at `/home/wesbaker/dewey` (or update the workflow and PM2 `cwd`)
+- PM2 already manages the `dewey` process at least once
+
+On every push to `main`, `.github/workflows/deploy.yml` will:
+
+1. `git pull --ff-only origin main` in `/home/wesbaker/dewey`
+2. `npm ci`
+3. `npm run build`
+4. `pm2 restart dewey --update-env`
+
+If the process does not exist yet, the workflow starts it with `ecosystem.config.cjs`.
+
+### Manual Updating
 
 ```bash
 cd ~/dewey
-git pull
-npm install
-pm2 restart dewey
+git pull --ff-only origin main
+npm ci
+npm run build
+pm2 restart dewey --update-env
 ```
 
 ## How the Rotation Works
