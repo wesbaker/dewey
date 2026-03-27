@@ -2,11 +2,9 @@ module.exports = {
   apps: [
     {
       name: "dewey",
-      script: "./node_modules/.bin/tsx",
-      args: "src/index.ts",
+      script: "dist/index.js",
       // Update this to the actual path on your Raspberry Pi
-      cwd: "/home/pi/dewey",
-      interpreter: "none",
+      cwd: "/home/wesbaker/dewey",
       env: {
         NODE_ENV: "production",
       },

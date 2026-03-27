@@ -1,0 +1,35 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Pull latest code
+        working-directory: /home/wesbaker/dewey
+        run: |
+          git checkout main
+          git pull --ff-only origin main
+
+      - name: Install dependencies
+        working-directory: /home/wesbaker/dewey
+        run: npm ci
+
+      - name: Build
+        working-directory: /home/wesbaker/dewey
+        run: npm run build
+
+      - name: Restart bot
+        working-directory: /home/wesbaker/dewey
+        run: |
+          if pm2 describe dewey >/dev/null; then
+            pm2 restart dewey --update-env
+          else
+            pm2 start ecosystem.config.cjs --only dewey --update-env
+          fi
