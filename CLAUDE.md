@@ -4,6 +4,7 @@
 
 - Always update `README.md` to reflect any new or changed commands, features, or setup instructions.
 - Update `WORKLOG.md` with a dated entry summarizing what changed in this session.
+- Run `npm install` after adding or removing packages to keep `package-lock.json` in sync, then commit it alongside `package.json`.
 - Run `npx tsc --noEmit` to verify the project type-checks cleanly before finishing.
 - Run `npm test` to verify all tests pass.
 - When adding new pure logic (rotation math, data transformations), add tests in the corresponding `*.test.ts` file.
