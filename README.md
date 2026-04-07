@@ -17,6 +17,7 @@ A Discord bot for managing a book club rotation. Randomizes who picks the book e
 | Command | Description | Admin |
 |---|---|---|
 | `/schedule` | Show current and upcoming rotation | |
+| `/current` | Show who is picking this month (with book and source links if picked) | |
 | `/next` | Show who picks next month (with book and source links if picked) | |
 | `/history` | Show past months and book picks | |
 | `/pick <url>` | Set your book pick (Goodreads URL) | |
