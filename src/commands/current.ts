@@ -11,16 +11,15 @@ export default {
     .setDescription("Show who is picking the book this month"),
 
   async execute(interaction) {
+    await interaction.deferReply();
+
     const schedule = readSchedule();
     const { year, month } = currentYearMonth();
     const slot = getSlotForYearMonth(schedule.rotation, year, month);
     const label = formatSlot(year, month);
 
     if (!slot) {
-      await interaction.reply({
-        content: `No one is assigned to ${label} yet.`,
-        ephemeral: true,
-      });
+      await interaction.editReply(`No one is assigned to ${label} yet.`);
       return;
     }
 
@@ -55,6 +54,6 @@ export default {
       color: 0x5865f2,
     });
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   },
 } satisfies Command;
