@@ -76,16 +76,24 @@ client.on("interactionCreate", async (interaction) => {
     await command.execute(interaction);
   } catch (err) {
     console.error(`[dewey] Error in /${interaction.commandName}:`, err);
-    const msg = {
-      content: "Something went wrong. Check the bot logs.",
-      ephemeral: true,
-    };
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(msg);
-    } else {
-      await interaction.reply(msg);
+    try {
+      const msg = {
+        content: "Something went wrong. Check the bot logs.",
+        ephemeral: true,
+      };
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(msg);
+      } else {
+        await interaction.reply(msg);
+      }
+    } catch {
+      // Interaction expired before we could reply — nothing to do
     }
   }
+});
+
+client.on("error", (err) => {
+  console.error("[dewey] Client error:", err);
 });
 
 await client.login(config.discordToken);
