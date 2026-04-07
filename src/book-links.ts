@@ -21,6 +21,10 @@ export function buildBookSourceLinks(params: {
   }
 
   const query = encodeURIComponent(params.bookTitle);
+  const shortTitle = encodeURIComponent(
+    params.bookTitle.replace(/\s*\([^)]*\)/g, "").trim()
+  );
+  const hooplaQuery = shortTitle.replace(/%20/g, "+");
 
   links.push(
     {
@@ -33,11 +37,11 @@ export function buildBookSourceLinks(params: {
     },
     {
       label: "Libby",
-      url: "https://libbyapp.com/library/librarypoint",
+      url: `https://libbyapp.com/search/librarypoint/search/query-${shortTitle}/page-1`,
     },
     {
       label: "Hoopla",
-      url: `https://www.hoopladigital.com/search?query=${query}`,
+      url: `https://www.hoopladigital.com/search?q=${hooplaQuery}&scope=everything&type=direct`,
     }
   );
 
