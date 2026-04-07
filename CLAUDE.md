@@ -3,7 +3,10 @@
 ## After making changes
 
 - Always update `README.md` to reflect any new or changed commands, features, or setup instructions.
+- Update `WORKLOG.md` with a dated entry summarizing what changed in this session.
 - Run `npx tsc --noEmit` to verify the project type-checks cleanly before finishing.
+- Run `npm test` to verify all tests pass.
+- When adding new pure logic (rotation math, data transformations), add tests in the corresponding `*.test.ts` file.
 
 ## Project conventions
 
