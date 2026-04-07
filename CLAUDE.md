@@ -4,7 +4,7 @@
 
 - Always update `README.md` to reflect any new or changed commands, features, or setup instructions.
 - Update `WORKLOG.md` with a dated entry summarizing what changed in this session.
-- Run `npm install` after adding or removing packages to keep `package-lock.json` in sync, then commit it alongside `package.json`.
+- Run `npm install` after adding or removing packages to keep `package-lock.json` in sync, then commit it alongside `package.json`. Prefer packages that don't use platform-specific native bindings (e.g. avoid vitest 4.x which uses rolldown) — the lock file is generated on macOS and must work on Linux CI runners too.
 - Run `npx tsc --noEmit` to verify the project type-checks cleanly before finishing.
 - Run `npm test` to verify all tests pass.
 - When adding new pure logic (rotation math, data transformations), add tests in the corresponding `*.test.ts` file.
