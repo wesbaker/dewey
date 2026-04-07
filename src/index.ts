@@ -43,7 +43,7 @@ console.log(`[dewey] Registered ${commandData.length} slash commands`);
 // Create the bot client (only needs Guilds intent for slash commands)
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-client.once("ready", () => {
+client.once("clientReady", () => {
   console.log(`[dewey] Online as ${client.user?.tag}`);
   initScheduler(client);
 });
