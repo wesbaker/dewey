@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-04-28
+
+- Added `/help` command — lists all available commands with descriptions, ephemeral (only visible to the invoker), and filters out admin-only commands for non-admin users
+
 ## 2026-04-07
 
 - Added `WORKLOG.md` to track ongoing work on the project
