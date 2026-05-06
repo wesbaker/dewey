@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-05-06
+
+- Smarter deploy: when `package-lock.json` is unchanged, skip the stop/npm ci/start cycle and use a fast `pm2 restart` instead; full stop/install/start still runs when deps change or on manual dispatch
+
 ## 2026-04-28
 
 - Added `/help` command — lists all available commands with descriptions, ephemeral (only visible to the invoker), and filters out admin-only commands for non-admin users
