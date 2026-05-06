@@ -8,6 +8,7 @@
 - Run `npx tsc --noEmit` to verify the project type-checks cleanly before finishing.
 - Run `npm test` to verify all tests pass.
 - When adding new pure logic (rotation math, data transformations), add tests in the corresponding `*.test.ts` file.
+- Follow red/green/refactor TDD: write a failing test first, make it pass with minimal code, then clean up.
 
 ## Project conventions
 

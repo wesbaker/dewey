@@ -5,6 +5,7 @@ import { readSchedule, writeSchedule } from "../data.js";
 import { currentYearMonth } from "../rotation.js";
 import { config } from "../config.js";
 import { scrapeGoodreadsTitle } from "../goodreads.js";
+import { buildBookEmbed } from "../book-embed.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -106,10 +107,13 @@ export default {
       (m) => m.discordId === slot.memberId
     );
     const label = formatSlot(slot.year, slot.month);
-    const titleDisplay = bookTitle ? `**${bookTitle}**\n${url}` : url;
+    const embed = buildBookEmbed({
+      slot,
+      member,
+      label,
+      embedTitle: `📚 Book Picked: ${label}`,
+    });
 
-    await interaction.editReply(
-      `📚 Book picked for **${label}** (${member?.name ?? "unknown"}):\n${titleDisplay}`
-    );
+    await interaction.editReply({ embeds: [embed] });
   },
 } satisfies Command;
