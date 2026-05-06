@@ -1,9 +1,9 @@
-import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types.js";
 import { readSchedule } from "../data.js";
 import { currentYearMonth, getSlotForYearMonth } from "../rotation.js";
 import { formatSlot } from "../types.js";
-import { buildBookSourceLinks } from "../book-links.js";
+import { buildBookEmbed } from "../book-embed.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -24,34 +24,11 @@ export default {
     }
 
     const member = schedule.members.find((m) => m.discordId === slot.memberId);
-    const name = member?.name ?? `<@${slot.memberId}>`;
-
-    const lines = [
-      `**${name}** (<@${slot.memberId}>) is picking the book for **${label}**.`,
-    ];
-    if (slot.pin) lines.push("📌 *(pinned slot)*");
-    if (slot.bookUrl) {
-      const bookDisplay = slot.bookTitle ?? slot.bookUrl;
-      lines.push(`\n📖 **Book:** ${bookDisplay}`);
-      if (slot.bookTitle) {
-        const sourceLinks = buildBookSourceLinks({
-          bookUrl: slot.bookUrl,
-          bookTitle: slot.bookTitle,
-        });
-        lines.push(
-          `🔗 **Sources:**\n${sourceLinks
-            .map((l) => `- [${l.label}](${l.url})`)
-            .join("\n")}`
-        );
-      }
-    } else {
-      lines.push(`\n*No book picked yet — use \`/pick\` to set one.*`);
-    }
-
-    const embed = new EmbedBuilder({
-      title: `📚 This Month: ${label}`,
-      description: lines.join("\n"),
-      color: 0x5865f2,
+    const embed = buildBookEmbed({
+      slot,
+      member,
+      label,
+      embedTitle: `📚 This Month: ${label}`,
     });
 
     await interaction.editReply({ embeds: [embed] });
