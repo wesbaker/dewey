@@ -2,7 +2,7 @@
 
 ## 2026-05-06
 
-- Smarter deploy: `npm ci` now skips when `package-lock.json` is unchanged between the previous and new HEAD; always runs on `workflow_dispatch`
+- Smarter deploy: when `package-lock.json` is unchanged, skip the stop/npm ci/start cycle and use a fast `pm2 restart` instead; full stop/install/start still runs when deps change or on manual dispatch
 
 ## 2026-04-28
 

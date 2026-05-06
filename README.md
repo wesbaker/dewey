@@ -169,9 +169,8 @@ Then make sure:
 On every push to `main`, `.github/workflows/deploy.yml` will:
 
 1. `git pull --ff-only origin main` in `/home/wesbaker/dewey`
-2. `npm ci` — skipped automatically if `package-lock.json` did not change in the push (always runs on manual dispatch)
-3. `npm run build`
-4. `pm2 restart dewey --update-env`
+2. If `package-lock.json` changed (or it's a manual dispatch): `pm2 stop` → `npm ci` → `npm run build` → `pm2 start`
+3. Otherwise: `npm run build` → `pm2 restart dewey --update-env`
 
 If the process does not exist yet, the workflow starts it with `ecosystem.config.cjs`.
 
