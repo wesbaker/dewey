@@ -169,7 +169,7 @@ Then make sure:
 On every push to `main`, `.github/workflows/deploy.yml` will:
 
 1. `git pull --ff-only origin main` in `/home/wesbaker/dewey`
-2. `npm ci`
+2. `npm ci` — skipped automatically if `package-lock.json` did not change in the push (always runs on manual dispatch)
 3. `npm run build`
 4. `pm2 restart dewey --update-env`
 
