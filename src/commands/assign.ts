@@ -44,7 +44,7 @@ export default {
     const member = schedule.members.find((m) => m.discordId === user.id);
     if (!member) {
       await interaction.reply({
-        content: `${user.username} is not in the member list. Add them to \`data/schedule.json\` first.`,
+        content: `${user.username} is not in the member list. Add them with \`/addmember\` first.`,
         ephemeral: true,
       });
       return;

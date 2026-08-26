@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Book club Discord bot",
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",

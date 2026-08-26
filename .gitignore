@@ -3,3 +3,6 @@ dist/
 .worktrees/
 .env
 data/schedule.json
+data/dewey.sqlite
+data/dewey.sqlite-shm
+data/dewey.sqlite-wal

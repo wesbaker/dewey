@@ -11,9 +11,12 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Command } from "./types.js";
 import { config } from "./config.js";
-import { initScheduler } from "./scheduler.js";
+import { initializeDataStore } from "./data.js";
+import { initScheduler, runDueNotifications } from "./scheduler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+initializeDataStore();
 
 // Load all command files dynamically
 const commands = new Collection<string, Command>();
@@ -46,6 +49,9 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.once("clientReady", () => {
   console.log(`[dewey] Online as ${client.user?.tag}`);
   initScheduler(client);
+  void runDueNotifications(client).catch((error) => {
+    console.error("[scheduler] startup worker failed:", error);
+  });
 });
 
 client.on("interactionCreate", async (interaction) => {

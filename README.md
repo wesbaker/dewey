@@ -11,7 +11,7 @@ pointer for tools that look for that filename.
 - **Randomization** that fills empty slots without overwriting existing assignments
 - **Pin and assign** members to specific year+month slots
 - **Book tracking** — members set their pick with a Goodreads URL, title is scraped automatically
-- **Mid-month reminders** on the 15th — nudges the current picker about a location, the next picker about their book, and the admin if the next 3 active months are not fully assigned
+- **Durable mid-month reminders** — queues reminders in SQLite, delivers them to the configured channel on the 15th, catches up after downtime, retries transient failures, and alerts the admin after the third failed attempt
 - **Book source links** in `/next` — shows Goodreads plus Amazon, Audible, Libby, and Hoopla links for picked books
 - **Slash commands** for managing the schedule
 
@@ -35,7 +35,6 @@ pointer for tools that look for that filename.
 | `/unexclude @user <month>` | Remove an exclusion | Yes |
 | `/swap @user1 @user2` | Swap two members' months | Yes |
 | `/addmember @user [name]` | Add a member to the book club | Yes |
-| `/setchannel #channel` | Set the reminder channel | Yes |
 
 ### Assign vs Pin
 
@@ -87,32 +86,56 @@ DISCORD_TOKEN=your_bot_token
 APPLICATION_ID=your_application_id
 SERVER_ID=your_server_id
 ADMIN_DISCORD_ID=your_discord_user_id
+REMINDER_CHANNEL_ID=your_reminder_channel_id
 REMINDER_HOUR=10
 ```
 
 ### 5. Add Members
 
-You can add members via the `/addmember` slash command, or edit `data/schedule.json` directly.
+You can add members via the `/addmember` slash command.
 
-On first run, if `data/schedule.json` doesn't exist, it's automatically created from `data/schedule.example.json`:
+On first run with Node 22.13 or newer, Dewey imports `data/schedule.json` into
+`data/dewey.sqlite` in one transaction. The JSON file is left unchanged as a
+recovery backup; use Discord commands rather than editing it after migration.
+If startup is interrupted before the transaction commits, the next startup
+retries the import.
+An existing populated SQLite database is kept authoritative even if it predates
+the migration marker.
+On a brand-new install with no JSON backup, Dewey creates an empty SQLite
+schedule; add members with `/addmember` and populate the rotation with the
+Discord commands.
 
-```json
-{
-  "reminderChannelId": null,
-  "members": [
-    { "discordId": "123456789012345678", "name": "Alice" },
-    { "discordId": "234567890123456789", "name": "Bob" }
-  ],
-  "rotation": [],
-  "exclusions": []
-}
-```
-
-`data/schedule.json` is gitignored — your live data won't conflict with pulls.
+`data/dewey.sqlite` (and its WAL/shared-memory files) and the retained
+`data/schedule.json` backup are gitignored, so live data won't conflict with pulls.
+Keep `data/dewey.sqlite`, `data/dewey.sqlite-wal`, and
+`data/dewey.sqlite-shm` together when making a filesystem backup. The JSON
+file is retained unchanged as the first-start migration backup; after the
+migration, use Discord commands such as `/addmember` and `/assign` instead of
+editing either live data file directly. Configure the reminder destination with
+`REMINDER_CHANNEL_ID` in `.env`.
 
 Get Discord user IDs by right-clicking a user > **Copy User ID** (requires Developer Mode).
 
 The member count doesn't need to match any particular number. When you `/randomize`, the bot creates a window of N upcoming months (where N = member count), and fills any empty slots in that window.
+
+### Reminder delivery and logs
+
+Dewey creates a uniquely keyed reminder for each active month. The worker runs
+when the client starts, every five minutes, and at the configured reminder time
+on the 15th. If the process was down or Discord was unavailable, due work is
+delivered on the next run rather than discarded. A late reminder identifies
+both the month it was intended for and the date it was actually sent.
+
+Failed sends remain queued and use backoff delays of 1, 5, 15, and 60 minutes,
+then hourly retries. After the third failed attempt, Dewey queues a durable
+admin direct alert with the same retry behavior while retaining the original
+reminder for later retries. The `REMINDER_HOUR` setting controls the initial
+monthly due time in the server's local timezone.
+
+Scheduler diagnostics use `[scheduler]` log entries for worker starts,
+notification claims, send attempts, successful Discord message IDs, failures,
+and third-attempt admin alerts. Channel-fetch failures and failed alert sends
+are logged explicitly as well.
 
 ### 6. Install and Run
 
@@ -124,7 +147,6 @@ npm start
 The bot should come online and register its slash commands. Then in Discord:
 
 ```
-/setchannel #book-club
 /randomize
 /schedule
 ```
