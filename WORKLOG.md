@@ -1,5 +1,9 @@
 # Worklog
 
+## 2026-08-25
+
+- Made `AGENTS.md` the tool-neutral canonical agent instruction file and reduced `CLAUDE.md` to a compatibility pointer, so unavailable Claude-specific plugins do not block Codex diagnosis or routine work.
+
 ## 2026-05-06
 
 - Smarter deploy: when `package-lock.json` is unchanged, skip the stop/npm ci/start cycle and use a fast `pm2 restart` instead; full stop/install/start still runs when deps change or on manual dispatch

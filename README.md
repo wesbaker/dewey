@@ -2,6 +2,9 @@
 
 A Discord bot for managing a book club rotation. Randomizes who picks the book each month, tracks book picks with Goodreads integration, and sends mid-month reminders.
 
+Repository agent guidance lives in `AGENTS.md`; `CLAUDE.md` is a compatibility
+pointer for tools that look for that filename.
+
 ## Features
 
 - **Rolling schedule** across years (December is always off)
