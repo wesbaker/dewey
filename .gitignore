@@ -1,4 +1,5 @@
 node_modules/
 dist/
+.worktrees/
 .env
 data/schedule.json
