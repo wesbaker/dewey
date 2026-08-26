@@ -24,10 +24,37 @@ export interface Exclusion {
 }
 
 export interface Schedule {
-  reminderChannelId: string | null;
   members: Member[];
   rotation: RotationSlot[];
   exclusions: Exclusion[];
+}
+
+export type NotificationStatus = "pending" | "sending" | "sent";
+
+export interface Notification {
+  key: string;
+  intendedMonth: string;
+  dueAt: Date;
+  status: NotificationStatus;
+  attemptCount: number;
+  nextAttemptAt: Date;
+  leaseExpiresAt?: Date;
+  claimToken?: string;
+  lastError?: string;
+  messageId?: string;
+}
+
+export interface NotificationAlert {
+  notificationKey: string;
+  intendedMonth: string;
+  errorMessage: string;
+  status: NotificationStatus;
+  attemptCount: number;
+  nextAttemptAt: Date;
+  leaseExpiresAt?: Date;
+  claimToken?: string;
+  lastError?: string;
+  messageId?: string;
 }
 
 export interface Command {

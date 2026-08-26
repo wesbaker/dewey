@@ -24,5 +24,6 @@ export const config = {
   applicationId: requireEnv("APPLICATION_ID"),
   serverId: requireEnv("SERVER_ID"),
   adminDiscordId: requireEnv("ADMIN_DISCORD_ID"),
+  reminderChannelId: requireEnv("REMINDER_CHANNEL_ID"),
   reminderHour: getReminderHour(),
 };

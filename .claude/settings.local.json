@@ -8,7 +8,19 @@
       "Bash(gh api:*)",
       "Bash(node -e:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('lockfileVersion:', d['lockfileVersion']\\); print\\('packages keys \\(top level\\):', [k for k in d.get\\('packages',{}\\).keys\\(\\) if k == '' or not k.startswith\\('node_modules/'\\)]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); pkgs=d.get\\('packages',{}\\); print\\('Total packages:', len\\(pkgs\\)\\); print\\('Has vitest:', any\\('vitest' in k for k in pkgs\\)\\)\")",
+      "Bash(python3:*)",
+      "Bash(gh run:*)",
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(git checkout:*)",
+      "Skill(discord:configure)",
+      "Read(//Users/wesbaker/.claude/channels/discord/**)",
+      "Bash(git pull:*)",
+      "Bash(git push:*)",
+      "Skill(commit-commands:commit)",
+      "Bash(git *)"
     ]
   }
 }

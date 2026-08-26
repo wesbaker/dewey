@@ -1,5 +1,19 @@
 # Worklog
 
+## 2026-08-25
+
+- Made monthly reminder catch-up materialize every active due month from its tracking baseline, including across December, while a December first start begins tracking in January to avoid replaying November.
+- Made unavailable or invalid configured reminder channels consume the normal durable retry/backoff workflow after claiming work.
+- Added a durable, retryable SQLite queue for third-failure admin alerts and corrected late-December send-date rendering.
+- Raised the Node engine floor and setup documentation to Node 22.13, where `node:sqlite` no longer needs the experimental flag.
+- Moved the reminder channel from persisted schedule data and `/setchannel` to required `REMINDER_CHANNEL_ID` configuration; retained member, rotation, and exclusion migration behavior.
+- Documented SQLite first-start migration and backup files, Discord-only live-data operations, durable late/retry reminders, third-attempt admin alerts, and scheduler diagnostics.
+- Moved schedule persistence to SQLite with one-time transactional import from `data/schedule.json`; the JSON backup is preserved unchanged and command-facing schedule reads/writes retain their existing API.
+- Made incomplete first-run SQLite migrations retry safely, and updated member-assignment guidance to use `/addmember`.
+- Preserved populated pre-marker SQLite schedules during startup, preventing stale JSON backups from overwriting them.
+- Made new installs initialize an empty SQLite schedule without creating a JSON example backup.
+- Made `AGENTS.md` the tool-neutral canonical agent instruction file and reduced `CLAUDE.md` to a compatibility pointer, so unavailable Claude-specific plugins do not block Codex diagnosis or routine work.
+
 ## 2026-05-06
 
 - Smarter deploy: when `package-lock.json` is unchanged, skip the stop/npm ci/start cycle and use a fast `pm2 restart` instead; full stop/install/start still runs when deps change or on manual dispatch
