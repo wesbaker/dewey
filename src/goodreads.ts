@@ -23,38 +23,53 @@ export async function scrapeGoodreadsTitle(
       console.warn(
         `[goodreads] Failed to fetch ${url}: ${response.status} ${response.statusText}`
       );
-      return null;
-    }
+    } else {
+      // Read the body as text — Goodreads pages are big but the <title>
+      // is in the first few KB of the document
+      const html = await response.text();
 
-    // Read the body as text — Goodreads pages are big but the <title>
-    // is in the first few KB of the document
-    const html = await response.text();
+      // Extract <title>...</title>
+      const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (titleMatch) {
+        let title = titleMatch[1].trim();
 
-    // Extract <title>...</title>
-    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    if (!titleMatch) {
+        // Clean up HTML entities
+        title = title
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&#39;/g, "'")
+          .replace(/&quot;/g, '"')
+          .replace(/&#x27;/g, "'")
+          .replace(/&#x2F;/g, "/");
+
+        // Strip the " | Goodreads" suffix
+        title = title.replace(/\s*\|\s*Goodreads\s*$/, "");
+        if (title) return title;
+      }
+
       console.warn(`[goodreads] No <title> found in ${url}`);
-      return null;
     }
-
-    let title = titleMatch[1].trim();
-
-    // Clean up HTML entities
-    title = title
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&#39;/g, "'")
-      .replace(/&quot;/g, '"')
-      .replace(/&#x27;/g, "'")
-      .replace(/&#x2F;/g, "/");
-
-    // Strip the " | Goodreads" suffix
-    title = title.replace(/\s*\|\s*Goodreads\s*$/, "");
-
-    return title || null;
   } catch (err) {
     console.warn(`[goodreads] Error scraping ${url}:`, err);
+  }
+
+  try {
+    const readerUrl = `https://r.jina.ai/http://${url.replace(/^https?:\/\//, "")}`;
+    const response = await fetch(readerUrl, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) {
+      console.warn(
+        `[goodreads] Reader fallback failed for ${url}: ${response.status} ${response.statusText}`
+      );
+      return null;
+    }
+
+    const titleMatch = (await response.text()).match(/^Title:\s*(.+)$/m);
+    return titleMatch?.[1].trim() || null;
+  } catch (err) {
+    console.warn(`[goodreads] Reader fallback error for ${url}:`, err);
     return null;
   }
 }

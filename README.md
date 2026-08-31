@@ -45,7 +45,7 @@ Both respect the rolling model — you specify a month *and* a year.
 
 ### Book Picks
 
-When a member runs `/pick` with a Goodreads URL, the bot scrapes the book title from the page and stores both the URL and title. The title appears as a clickable link in `/schedule`, `/next`, and `/history`. If the scrape fails, it falls back to showing just the URL.
+When a member runs `/pick` with a Goodreads URL, the bot scrapes the book title from the page and stores both the URL and title. If Goodreads blocks the direct request, Dewey uses a text-rendering fallback to recover the title. The title appears as a clickable link in `/schedule`, `/next`, and `/history`, and enables the Amazon, Audible, Libby, and Hoopla source links. If both lookups fail, it falls back to showing just the URL.
 
 Members can only set the pick for their own upcoming slot. Admins can specify a month and year to set it for any slot.
 

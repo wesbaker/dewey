@@ -1,5 +1,10 @@
 # Worklog
 
+## 2026-08-30
+
+- Added a Goodreads title-lookup fallback for `/pick` when Goodreads serves an empty WAF challenge, preserving book titles and source links for blocked pages.
+- Consolidated the server's split PM2 state into one system-managed daemon, eliminating duplicate Dewey processes that competed to respond to Discord interactions.
+
 ## 2026-08-25
 
 - Made monthly reminder catch-up materialize every active due month from its tracking baseline, including across December, while a December first start begins tracking in January to avoid replaying November.
